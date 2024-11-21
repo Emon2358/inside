@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proxy Browser</title>
+</head>
+<body>
+<h1>Proxy Browser</h1>
+
+<!-- URL入力フォーム -->
+<form id="proxyForm">
+    <input type="url" id="urlInput" placeholder="URLを入力してください">
+    <button type="submit">アクセスする</button>
+</form>
+
+<!-- ウェブページ表示エリア -->
+<iframe id="webPageFrame" width="100%" height="600"></iframe>
+
+<!-- JavaScript -->
+<script>
+// フォームのサブミット時の処理
+document.getElementById("proxyForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const url = document.getElementById("urlInput").value;
+    if (url) {
+        loadWebPage(url);
+    }
+});
+
+// ウェブページを読み込む関数
+function loadWebPage(url) {
+    // CORSを回避するためのプロキシサーバーのURL
+    const proxyUrl = "https://api.allorigins.win/raw?url=";
+    // プロキシ経由でウェブページを読み込む
+    const apiUrl = proxyUrl + encodeURIComponent(url);
+    fetch(apiUrl)
+        .then(response => response.text())
+        .then(data => {
+            // 取得したHTMLを解析してリダイレクト先のURLを取得
+            const redirectedUrl = parseRedirect(data);
+            if (redirectedUrl) {
+                // リダイレクト先がある場合は再度読み込む
+                loadWebPage(redirectedUrl);
+            } else {
+                // 取得したHTMLをiframeに表示
+                const iframe = document.getElementById("webPageFrame");
+                iframe.srcdoc = data;
+                
+                // iframeが読み込まれた後にスクリプトを動的に挿入
+                iframe.onload = function() {
+                    injectScriptsIntoIframe(iframe, data);
+                };
+            }
+        })
+        .catch(error => console.error("Error fetching web page:", error));
+}
+
+// iframe内に動的にスクリプトを注入する関数
+function injectScriptsIntoIframe(iframe, pageContent) {
+    const doc = iframe.contentWindow.document;
+    
+    // pageContentをDOMとして解析
+    const parser = new DOMParser();
+    const docContent = parser.parseFromString(pageContent, 'text/html');
+    
+    // ページ内の全てのスクリプトを探し、iframe内に追加
+    const scripts = docContent.querySelectorAll('script');
+    scripts.forEach(script => {
+        const newScript = doc.createElement('script');
+        newScript.src = script.src; // src属性があればそれを使用
+        newScript.textContent = script.textContent; // スクリプトの内容があればそれを使用
+        
+        // スクリプトをiframe内に追加
+        doc.body.appendChild(newScript);
+    });
+}
+
+// リダイレクト先を解析する関数
+function parseRedirect(html) {
+    const match = html.match(/<meta\s+http-equiv=["']refresh["']\s+content=["']\d+;\s*url=([^"']+)["']/i);
+    if (match && match[1]) {
+        return match[1];
+    }
+    return null;
+}
+</script>
+
+</body>
+</html>
