@@ -14,8 +14,7 @@
     <button type="submit">アクセスする</button>
 </form>
 
-<!-- ウェブページ表示エリア -->
-<iframe id="webPageFrame" width="100%" height="600"></iframe>
+<!-- ここではiframeは使用せず、直接ページにリダイレクトします -->
 
 <!-- JavaScript -->
 <script>
@@ -32,10 +31,15 @@ document.getElementById("proxyForm").addEventListener("submit", function(e) {
 function loadWebPage(url) {
     // CORSを回避するためのプロキシサーバーのURL
     const proxyUrl = "https://api.allorigins.win/raw?url=";
-    // プロキシ経由でウェブページを読み込む
     const apiUrl = proxyUrl + encodeURIComponent(url);
+
     fetch(apiUrl)
-        .then(response => response.text())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Failed to fetch page: ${response.status}`);
+            }
+            return response.text();
+        })
         .then(data => {
             // 取得したHTMLを解析してリダイレクト先のURLを取得
             const redirectedUrl = parseRedirect(data);
@@ -43,37 +47,14 @@ function loadWebPage(url) {
                 // リダイレクト先がある場合は再度読み込む
                 loadWebPage(redirectedUrl);
             } else {
-                // 取得したHTMLをiframeに表示
-                const iframe = document.getElementById("webPageFrame");
-                iframe.srcdoc = data;
-                
-                // iframeが読み込まれた後にスクリプトを動的に挿入
-                iframe.onload = function() {
-                    injectScriptsIntoIframe(iframe, data);
-                };
+                // iframeを使わず、直接ブラウザでURLを開く
+                window.location.href = url; // 直接指定されたURLにリダイレクト
             }
         })
-        .catch(error => console.error("Error fetching web page:", error));
-}
-
-// iframe内に動的にスクリプトを注入する関数
-function injectScriptsIntoIframe(iframe, pageContent) {
-    const doc = iframe.contentWindow.document;
-    
-    // pageContentをDOMとして解析
-    const parser = new DOMParser();
-    const docContent = parser.parseFromString(pageContent, 'text/html');
-    
-    // ページ内の全てのスクリプトを探し、iframe内に追加
-    const scripts = docContent.querySelectorAll('script');
-    scripts.forEach(script => {
-        const newScript = doc.createElement('script');
-        newScript.src = script.src; // src属性があればそれを使用
-        newScript.textContent = script.textContent; // スクリプトの内容があればそれを使用
-        
-        // スクリプトをiframe内に追加
-        doc.body.appendChild(newScript);
-    });
+        .catch(error => {
+            console.error("Error fetching web page:", error);
+            alert("指定したURLにアクセスできませんでした。URLを確認してください。");
+        });
 }
 
 // リダイレクト先を解析する関数
@@ -88,3 +69,4 @@ function parseRedirect(html) {
 
 </body>
 </html>
+
