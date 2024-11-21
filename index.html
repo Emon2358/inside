@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Proxy Browser</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Browser with Free API</title>
 </head>
 <body>
-<h1>Proxy Browser</h1>
+<h1>Proxy Browser with Free API</h1>
 
 <!-- URL入力フォーム -->
 <form id="proxyForm">
-    <input type="url" id="urlInput" placeholder="URLを入力してください">
+    <input type="url" id="urlInput" placeholder="URLを入力してください" required>
     <button type="submit">アクセスする</button>
 </form>
 
@@ -21,17 +21,17 @@ document.getElementById("proxyForm").addEventListener("submit", function(e) {
     e.preventDefault();
     const url = document.getElementById("urlInput").value;
     if (url) {
-        loadWebPage(url);
+        loadWebPageWithProxy(url);
     }
 });
 
-// ウェブページを読み込む関数（プロキシを使用）
-function loadWebPage(url) {
-    // CORSを回避するためのプロキシサーバーのURL
-    const proxyUrl = "https://api.allorigins.win/raw?url=";
-    const apiUrl = proxyUrl + encodeURIComponent(url);
+// 無料プロキシAPI経由でウェブページを読み込む関数（CORS回避）
+function loadWebPageWithProxy(url) {
+    // AllOriginsのプロキシAPIを使用
+    const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
 
-    fetch(apiUrl)
+    // プロキシAPIにリクエストを送信
+    fetch(proxyUrl)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Failed to fetch page: ${response.status}`);
@@ -43,10 +43,10 @@ function loadWebPage(url) {
             const redirectedUrl = parseRedirect(data);
             if (redirectedUrl) {
                 // リダイレクト先がある場合は再度読み込む
-                loadWebPage(redirectedUrl);
+                loadWebPageWithProxy(redirectedUrl);
             } else {
-                // 直接ページをリダイレクトする（iframeを使用せず、プロキシ経由でページ遷移）
-                window.location.href = url;
+                // 取得したHTMLをiframeに表示
+                document.getElementById("webPageFrame").srcdoc = data;
             }
         })
         .catch(error => {
@@ -64,6 +64,9 @@ function parseRedirect(html) {
     return null;
 }
 </script>
+
+<!-- ウェブページ表示エリア -->
+<iframe id="webPageFrame" width="100%" height="600"></iframe>
 
 </body>
 </html>
