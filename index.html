@@ -14,8 +14,6 @@
     <button type="submit">アクセスする</button>
 </form>
 
-<!-- ここではiframeは使用せず、直接ページにリダイレクトします -->
-
 <!-- JavaScript -->
 <script>
 // フォームのサブミット時の処理
@@ -27,7 +25,7 @@ document.getElementById("proxyForm").addEventListener("submit", function(e) {
     }
 });
 
-// ウェブページを読み込む関数
+// ウェブページを読み込む関数（プロキシを使用）
 function loadWebPage(url) {
     // CORSを回避するためのプロキシサーバーのURL
     const proxyUrl = "https://api.allorigins.win/raw?url=";
@@ -47,8 +45,8 @@ function loadWebPage(url) {
                 // リダイレクト先がある場合は再度読み込む
                 loadWebPage(redirectedUrl);
             } else {
-                // iframeを使わず、直接ブラウザでURLを開く
-                window.location.href = url; // 直接指定されたURLにリダイレクト
+                // 直接ページをリダイレクトする（iframeを使用せず、プロキシ経由でページ遷移）
+                window.location.href = url;
             }
         })
         .catch(error => {
@@ -69,4 +67,3 @@ function parseRedirect(html) {
 
 </body>
 </html>
-
